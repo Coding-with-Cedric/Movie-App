@@ -1,44 +1,40 @@
-import {createContext, useState, useContext, useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
-const MovieContext = createContext()
+const MovieContext = createContext();
 
-export const useMovieContext = ( ) => useContext(MovieContext)
+export const MovieProvider = ({ children }) => {
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem("favorites");
+    return saved ? JSON.parse(saved) : [];
+  });
 
-export const MovieProvider = ({children}) => {
-        const [favorites, setFavorites] = useState([ ])
+  useEffect(() => {
+    localStorage.setItem("favorites", JSON.stringify(favorites));
+  }, [favorites]);
 
-useEffect(()  => {
-    const storedFavs = localStorage.getItem("favorites")
+  const addToFavorites = (movie) => {
+    setFavorites((prev) => {
+      // Prevent duplicates
+      if (prev.some((m) => m.id === movie.id)) return prev;
+      return [...prev, movie];
+    });
+  };
 
-    if (storedFavs) setFavorites(JSON.parse(storedFavs))
-}, [])
+  const removeFromFavorites = (movieId) => {
+    setFavorites((prev) => prev.filter((m) => m.id !== movieId)); // ← MUST BE ID
+  };
 
-useEffect(()  => {
-    localStorage.setItem('favorites', JSON.stringify(favorites))
-}, [favorites])
+  const isFavorite = (movieId) => {
+    return favorites.some((m) => m.id === movieId);
+  };
 
-
-const addToFavorites = (movie) => {
-    setFavorites(prev => [...prev, movie])
-}
-
-const removeFromFavorites = (movieID) => {
-    setFavorites(prev => prev.filter(movie => movie.id !== movieId))
-}
-
-
-const isFavorite = (movieId) => {
-    return favorites.some(movie => movie.id === movieId)
-}
-
-const value = {
-    favorites,
-    addToFavorites,
-    removeFromFavorites,
-    isFavorite
-}
-
-    return <MovieContext.Provider value={value}>
-                {children}
+  return (
+    <MovieContext.Provider
+      value={{ favorites, addToFavorites, removeFromFavorites, isFavorite }}
+    >
+      {children}
     </MovieContext.Provider>
-}
+  );
+};
+
+export const useMovieContext = () => useContext(MovieContext);
